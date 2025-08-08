@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8" />
+    <title>Simulazione Acustica Avanzata</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <h1>Simulazione Acustica Avanzata</h1>
+
+    <form id="controlliForm">
+        <div class="control-group">
+            <h3>Modalità di Interazione</h3>
+            <label><input type="radio" name="modalita" value="sorgente" checked> Aggiungi Sorgente</label>
+            <label><input type="radio" name="modalita" value="recettore"> Aggiungi Recettore</label>
+            <label><input type="radio" name="modalita" value="barriera"> Disegna Barriera</label>
+        </div>
+
+        <div class="control-group">
+            <h3>Parametri Sorgente da Aggiungere</h3>
+            <label>Nome Sorgente: <input type="text" id="nomeSorgente" value="S1" /></label>
+            <label>Potenza sonora (dB): <input type="number" id="potenza" value="100" /></label>
+            <label>Altezza sorgente (m): <input type="number" id="altezzaSorgente" value="3" /></label>
+            <label>Tipo propagazione:
+                <select id="tipoPropagazione">
+                    <option value="sferica">Sferica</option>
+                    <option value="semisferica" selected>Semisferica</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="control-group">
+            <h3>Parametri Generali</h3>
+            <label>Attenuazione barriera (dB): <input type="number" id="attenuazioneBarriera" value="10" /></label>
+            <label>Scala immagine (m/pixel): <input type="number" step="0.01" id="scalaPx" value="1" /></label>
+            <label>Carica planimetria: <input type="file" id="uploadImg" accept="image/*" /></label>
+        </div>
+
+        <div class="control-group buttons">
+            <button type="button" onclick="simula()">🚀 Ricalcola Simulazione</button>
+            <button type="button" onclick="reset()">Pulisci Tutto</button>
+            <button type="button" onclick="generaPDF()">📄 Genera PDF</button>
+        </div>
+    </form>
+
+    <div id="canvasWrapper">
+        <canvas id="mappaCanvas" width="800" height="600"></canvas>
+        <div id="legenda"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
+    <script src="script_avanzato.js"></script>
+</body>
+</html>
