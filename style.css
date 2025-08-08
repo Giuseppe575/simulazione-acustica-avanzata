@@ -1,0 +1,25 @@
+/* Aggiungi o modifica queste regole nel tuo file style.css */
+form {
+    flex-direction: column;
+    align-items: center;
+}
+.control-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    justify-content: center;
+}
+.control-group h3 {
+    width: 100%;
+    text-align: center;
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    color: #333;
+}
+.buttons {
+    border: none;
+}
