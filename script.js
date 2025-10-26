@@ -1,5 +1,14 @@
 const canvas = document.getElementById("mappaCanvas");
 const ctx = canvas.getContext("2d");
+const canvasStatus = document.getElementById("canvasStatus");
+const dimensioniCanvas = document.getElementById("dimensioniCanvas");
+const sintesiLista = document.getElementById("sintesiLista");
+const dataAggiornamento = document.getElementById("dataAggiornamento");
+
+if (dataAggiornamento) {
+    const formatter = new Intl.DateTimeFormat('it-IT', { dateStyle: 'long' });
+    dataAggiornamento.textContent = formatter.format(new Date());
+}
 
 // --- Strutture Dati ---
 let sorgenti = [];
@@ -11,6 +20,8 @@ let img = null;
 let isDrawingBarrier = false;
 let startPoint = null;
 
+aggiornaMetadatiCanvas();
+
 // --- Gestione Eventi ---
 
 // Caricamento planimetria
@@ -19,10 +30,35 @@ document.getElementById("uploadImg").addEventListener("change", function (e) {
     const reader = new FileReader();
     reader.onload = function (event) {
         img = new Image();
-        img.onload = () => simula(); // Una volta caricata l'immagine, ricalcola la simulazione
+        img.onload = () => {
+            aggiornaStatus("Planimetria caricata", "success");
+            simula();
+        };
         img.src = event.target.result;
     };
     reader.readAsDataURL(e.target.files[0]);
+});
+
+// Input che aggiornano automaticamente la simulazione
+[...document.querySelectorAll('#controlliForm input, #controlliForm select')]
+    .filter(el => el.type !== 'file' && el.name !== 'modalita')
+    .forEach(el => {
+        el.addEventListener('input', () => simula());
+        el.addEventListener('change', () => simula());
+    });
+
+document.querySelectorAll('input[name="modalita"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+        if (radio.checked) {
+            const modo = radio.value;
+            const messaggio = modo === 'sorgente'
+                ? 'Modalità: aggiunta sorgenti sonore'
+                : modo === 'recettore'
+                    ? 'Modalità: inserimento recettori'
+                    : 'Modalità: disegno barriere antirumore';
+            aggiornaStatus(messaggio, 'info');
+        }
+    });
 });
 
 // Click sul canvas per aggiungere elementi
@@ -34,35 +70,34 @@ canvas.addEventListener("click", function (e) {
 
     if (mode === 'recettore') {
         recettori.push({ x, y });
+        aggiornaStatus(`Recettore posizionato alle coordinate (${x.toFixed(0)}, ${y.toFixed(0)})`, 'success');
     } else if (mode === 'sorgente') {
-        // FIX 1: Aggiunto fallback a 0 per tutti i valori numerici per evitare errori NaN
         const nome = document.getElementById("nomeSorgente").value || "Sorgente";
         const potenza = parseFloat(document.getElementById("potenza").value) || 0;
         const altezza = parseFloat(document.getElementById("altezzaSorgente").value) || 0;
         const tipoPropagazione = document.getElementById("tipoPropagazione").value;
-        
+
         sorgenti.push({ x, y, nome, potenza, altezza, tipoPropagazione });
-        
-        // Incrementa il nome per la prossima sorgente (es. CASSA 1 -> CASSA 2)
         document.getElementById("nomeSorgente").value = nome.replace(/\d+$/, (n) => parseInt(n) + 1);
-    
+        aggiornaStatus(`Sorgente "${nome}" aggiunta in posizione (${x.toFixed(0)}, ${y.toFixed(0)})`, 'success');
     } else if (mode === 'barriera') {
         if (!isDrawingBarrier) {
             startPoint = { x, y };
             isDrawingBarrier = true;
-            // Disegna un punto di feedback per l'inizio della barriera
             drawElements(parseFloat(document.getElementById("scalaPx").value) || 1);
             ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
             ctx.beginPath();
             ctx.arc(x, y, 5, 0, 2 * Math.PI);
             ctx.fill();
+            aggiornaStatus('Punto iniziale barriera registrato', 'info');
         } else {
             barriere.push({ p1: startPoint, p2: { x, y } });
             isDrawingBarrier = false;
             startPoint = null;
+            aggiornaStatus('Barriera completata', 'success');
         }
     }
-    simula(); // Ridisegna tutto dopo ogni interazione
+    simula();
 });
 
 // --- Funzione Principale di Simulazione ---
@@ -71,24 +106,24 @@ function simula() {
     const scala = parseFloat(document.getElementById("scalaPx").value) || 1;
     const attenuazioneBarriera = parseFloat(document.getElementById("attenuazioneBarriera").value) || 0;
 
-    // 1. Pulisci e disegna la planimetria di base
+    aggiornaMetadatiCanvas(scala);
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (img) {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
     }
-    
+
     const colori = [
-        { min: 90, max: Infinity, color: "rgba(255,0,0,0.4)", label: "> 90 dB" },
-        { min: 80, max: 90, color: "rgba(255,165,0,0.4)", label: "80–90 dB" },
-        { min: 70, max: 80, color: "rgba(255,255,0,0.4)", label: "70–80 dB" },
-        { min: 60, max: 70, color: "rgba(144,238,144,0.4)", label: "60–70 dB" },
-        { min: 50, max: 60, color: "rgba(0,128,0,0.4)", label: "50–60 dB" },
-        { min: 0,  max: 50,  color: "rgba(173,216,230,0.4)", label: "< 50 dB" }
+        { min: 90, max: Infinity, color: "rgba(255,0,0,0.35)", label: "> 90 dB" },
+        { min: 80, max: 90, color: "rgba(255,165,0,0.35)", label: "80–90 dB" },
+        { min: 70, max: 80, color: "rgba(255,255,0,0.35)", label: "70–80 dB" },
+        { min: 60, max: 70, color: "rgba(144,238,144,0.35)", label: "60–70 dB" },
+        { min: 50, max: 60, color: "rgba(56,189,248,0.35)", label: "50–60 dB" },
+        { min: 0,  max: 50,  color: "rgba(99,102,241,0.25)", label: "< 50 dB" }
     ];
 
-    // FIX 2: La mappa di calore viene disegnata solo se ci sono sorgenti
     if (sorgenti.length > 0) {
-        const step = 10; // Calcola un punto ogni 10 pixel per velocità
+        const step = 10;
         for (let x = 0; x < canvas.width; x += step) {
             for (let y = 0; y < canvas.height; y += step) {
                 const livelloTotale = calcolaLivelloPunto(x, y, scala, attenuazioneBarriera);
@@ -101,11 +136,9 @@ function simula() {
         }
     }
 
-    // 2. Disegna tutti gli elementi (sorgenti, barriere, recettori)
     drawElements(scala);
-
-    // 3. Aggiorna legenda
     updateLegenda(colori);
+    aggiornaSintesi(scala, attenuazioneBarriera);
 }
 
 // --- Funzioni di Calcolo e Disegno ---
@@ -116,7 +149,7 @@ function calcolaLivelloPunto(x, y, scala, attBarriera) {
     sorgenti.forEach(s => {
         const dx = (x - s.x) * scala;
         const dy = (y - s.y) * scala;
-        const distanza = Math.max(1, Math.sqrt(dx * dx + dy * dy)); // Evita log(0)
+        const distanza = Math.max(1, Math.sqrt(dx * dx + dy * dy));
 
         let attenuazione = s.tipoPropagazione === "sferica"
             ? 20 * Math.log10(distanza) + 11
@@ -134,8 +167,8 @@ function calcolaLivelloPunto(x, y, scala, attBarriera) {
         }
 
         const livello = s.potenza - attenuazione;
-        if (!isNaN(livello)) { // FIX 3: Aggiunge il contributo solo se è un numero valido
-             sommaEnergetica += Math.pow(10, livello / 10);
+        if (!isNaN(livello)) {
+            sommaEnergetica += Math.pow(10, livello / 10);
         }
     });
 
@@ -144,8 +177,7 @@ function calcolaLivelloPunto(x, y, scala, attBarriera) {
 }
 
 function drawElements(scala) {
-    // Disegna barriere
-    ctx.strokeStyle = "red";
+    ctx.strokeStyle = "#dc2626";
     ctx.lineWidth = 3;
     barriere.forEach(b => {
         ctx.beginPath();
@@ -154,40 +186,81 @@ function drawElements(scala) {
         ctx.stroke();
     });
 
-    // Disegna sorgenti
     sorgenti.forEach(s => {
         ctx.beginPath();
-        ctx.arc(s.x, s.y, 8, 0, 2 * Math.PI);
-        ctx.fillStyle = "black";
+        ctx.arc(s.x, s.y, 10, 0, 2 * Math.PI);
+        ctx.fillStyle = "#111827";
         ctx.fill();
-        ctx.fillStyle = "white";
+        ctx.fillStyle = "#f8fafc";
         ctx.font = "bold 10px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(s.nome, s.x, s.y);
     });
-    
-    // Disegna recettori e calcola il loro livello
+
     const attBarriera = parseFloat(document.getElementById("attenuazioneBarriera").value) || 0;
     recettori.forEach((r, i) => {
         const livello = calcolaLivelloPunto(r.x, r.y, scala, attBarriera);
         ctx.beginPath();
-        ctx.arc(r.x, r.y, 5, 0, 2 * Math.PI);
-        ctx.fillStyle = "blue";
+        ctx.arc(r.x, r.y, 6, 0, 2 * Math.PI);
+        ctx.fillStyle = "#2563eb";
         ctx.fill();
-        ctx.fillStyle = "black";
-        ctx.font = "12px Arial";
+        ctx.fillStyle = "#111827";
+        ctx.font = "12px 'Roboto', Arial";
         ctx.textAlign = "left";
         ctx.textBaseline = "alphabetic";
-        ctx.fillText(`R${i + 1}: ${livello.toFixed(1)} dB`, r.x + 10, r.y);
+        ctx.fillText(`R${i + 1}: ${livello.toFixed(1)} dB`, r.x + 12, r.y);
     });
 }
 
 function updateLegenda(colori) {
     const legendaDiv = document.getElementById("legenda");
-    legendaDiv.innerHTML = "<b>Legenda (dB):</b><br>" + colori.map(c =>
-        `<div><span style="display:inline-block;width:15px;height:10px;background:${c.color};margin-right:5px;border:1px solid #ccc;"></span>${c.label}</div>`
+    legendaDiv.innerHTML = colori.map(c =>
+        `<div><span style="background:${c.color}"></span>${c.label}</div>`
     ).join("");
+}
+
+// --- Dashboard sintetica ---
+
+function aggiornaSintesi(scala, attBarriera) {
+    if (!sintesiLista) return;
+
+    const totaleSorgenti = sorgenti.length;
+    const totaleRecettori = recettori.length;
+    const totaleBarriere = barriere.length;
+
+    const recettoriConLivello = recettori.map((r, index) => ({
+        id: `R${index + 1}`,
+        livello: calcolaLivelloPunto(r.x, r.y, scala, attBarriera)
+    }));
+
+    const maxRecettore = recettoriConLivello.length
+        ? recettoriConLivello.reduce((prev, current) => current.livello > prev.livello ? current : prev)
+        : null;
+
+    const mediaRecettori = recettoriConLivello.length
+        ? recettoriConLivello.reduce((acc, cur) => acc + cur.livello, 0) / recettoriConLivello.length
+        : 0;
+
+    const tipologiaPropagazione = sorgenti.reduce((acc, s) => {
+        acc[s.tipoPropagazione] = (acc[s.tipoPropagazione] || 0) + 1;
+        return acc;
+    }, {});
+
+    const righeTipologia = Object.keys(tipologiaPropagazione).length
+        ? Object.entries(tipologiaPropagazione)
+            .map(([tipo, count]) => `${tipo === 'sferica' ? 'Sferica' : 'Semisferica'}: ${count}`)
+            .join(" · ")
+        : 'Nessuna sorgente configurata';
+
+    const messaggi = [
+        `<strong>Sorgenti attive:</strong> ${totaleSorgenti} ( ${righeTipologia} )`,
+        `<strong>Recettori monitorati:</strong> ${totaleRecettori}${maxRecettore ? ` – Valore massimo ${maxRecettore.id} = ${maxRecettore.livello.toFixed(1)} dB` : ''}`,
+        `<strong>Livello medio ai recettori:</strong> ${totaleRecettori ? mediaRecettori.toFixed(1) + ' dB' : 'n.d.'}`,
+        `<strong>Barriere modellate:</strong> ${totaleBarriere}${totaleBarriere ? ' (influenzano la propagazione quando intersecano il percorso sorgente-recettore)' : ''}`
+    ];
+
+    sintesiLista.innerHTML = messaggi.map(msg => `<li>${msg}</li>`).join("");
 }
 
 // --- Funzioni Utilità ---
@@ -199,9 +272,9 @@ function reset() {
     isDrawingBarrier = false;
     startPoint = null;
     document.getElementById("nomeSorgente").value = "S1";
-    // Pulisce anche la selezione del file per consistenza
     document.getElementById("uploadImg").value = "";
     img = null;
+    aggiornaStatus('Scenario ripristinato', 'info');
     simula();
 }
 
@@ -214,10 +287,11 @@ function lineSegmentsIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
 }
 
 function generaPDF() {
-    // Mostra un feedback all'utente che il PDF è in fase di creazione
-    const button = document.querySelector('button[onclick="generaPDF()"]');
-    button.textContent = '📄 Creazione PDF in corso...';
-    button.disabled = true;
+    const button = document.querySelector('[data-action="genera-pdf"]');
+    if (button) {
+        button.textContent = '📄 Creazione PDF in corso...';
+        button.disabled = true;
+    }
 
     html2canvas(document.getElementById("mappaCanvas")).then(canvas => {
         const imgData = canvas.toDataURL("image/png");
@@ -225,19 +299,17 @@ function generaPDF() {
         const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
 
         const dataCreazione = new Date().toLocaleDateString('it-IT');
-        let finalY = 0; // Tiene traccia della posizione verticale sulla pagina
+        let finalY = 0;
 
-        // --- Intestazione e Titolo ---
         doc.setFontSize(18);
         doc.setFont('helvetica', 'bold');
         doc.text("Rapporto di Valutazione Previsionale Acustica", doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
         doc.setFontSize(11);
         doc.setFont('helvetica', 'normal');
         doc.text(`Data di emissione: ${dataCreazione}`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
-        
-        finalY = 40; // Posizione di partenza sotto l'intestazione
 
-        // --- Sezione 1: Riferimenti Normativi e Metodologici ---
+        finalY = 40;
+
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.text("1. Riferimenti Normativi e Metodologici", 15, finalY);
@@ -251,7 +323,6 @@ function generaPDF() {
         ], 15, finalY);
         finalY += 20;
 
-        // --- Sezione 2: Metodologia di Calcolo ---
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.text("2. Metodologia di Calcolo", 15, finalY);
@@ -280,11 +351,10 @@ function generaPDF() {
         doc.text("Lp_tot = 10 * log10( SUM[i=1 to N] ( 10^(Lp_i / 10) ) )", 20, finalY);
         finalY += 15;
 
-        // --- Sezione 3: Parametri di Input (Tabella Sorgenti) ---
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.text("3. Parametri delle Sorgenti Sonore", 15, finalY);
-        
+
         const headSorgenti = [['ID', 'Nome', 'Potenza (Lw)', 'Altezza', 'Propagazione', 'Posizione (x, y)']];
         const bodySorgenti = sorgenti.map((s, i) => [
             `S${i + 1}`,
@@ -304,26 +374,22 @@ function generaPDF() {
         });
         finalY = doc.autoTable.previous.finalY + 15;
 
-        // Aggiunge una nuova pagina se non c'è abbastanza spazio
         if (finalY > 200) {
             doc.addPage();
             finalY = 20;
         }
 
-        // --- Sezione 4: Risultati della Simulazione ---
         doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
         doc.text("4. Risultati della Simulazione", 15, finalY);
         finalY += 8;
-        
-        // Immagine simulazione
+
         const imgProps = doc.getImageProperties(imgData);
         const pdfWidth = doc.internal.pageSize.getWidth();
         const imgHeight = (imgProps.height * (pdfWidth - 30)) / imgProps.width;
         doc.addImage(imgData, 'PNG', 15, finalY, pdfWidth - 30, imgHeight);
         finalY += imgHeight + 5;
 
-        // Tabella Recettori
         const scala = parseFloat(document.getElementById("scalaPx").value) || 1;
         const attBarriera = parseFloat(document.getElementById("attenuazioneBarriera").value) || 0;
         const headRecettori = [['ID', 'Posizione (x, y)', 'Livello Calcolato (Lp)']];
@@ -341,28 +407,50 @@ function generaPDF() {
         });
         finalY = doc.autoTable.previous.finalY + 10;
 
-        // --- Footer ---
         const pageCount = doc.internal.getNumberOfPages();
-        for(let i = 1; i <= pageCount; i++) {
+        for (let i = 1; i <= pageCount; i++) {
             doc.setPage(i);
             doc.setFontSize(9);
             doc.text(`Pagina ${i} di ${pageCount}`, doc.internal.pageSize.getWidth() - 25, 287);
             doc.text("Report generato con Simulatore Acustico Web", 15, 287);
         }
 
-        // Salva il PDF
-        doc.save(`Rapporto_Acustico_${new Date().toISOString().slice(0,10)}.pdf`);
-
-        // Ripristina il bottone
-        button.textContent = '📄 Genera PDF';
-        button.disabled = false;
+        doc.save(`Rapporto_Acustico_${new Date().toISOString().slice(0, 10)}.pdf`);
+        aggiornaStatus('Report PDF generato correttamente', 'success');
     }).catch(err => {
         console.error("Errore durante la generazione del PDF:", err);
-        // Ripristina il bottone in caso di errore
-        button.textContent = '📄 Genera PDF';
-        button.disabled = false;
+        aggiornaStatus('Errore durante la generazione del PDF', 'error');
+    }).finally(() => {
+        const button = document.querySelector('[data-action="genera-pdf"]');
+        if (button) {
+            button.textContent = '📄 Genera PDF';
+            button.disabled = false;
+        }
     });
 }
 
-// Esegui la simulazione all'avvio per mostrare una tela pulita e la legenda
+function aggiornaStatus(messaggio, tipo = 'info') {
+    if (!canvasStatus) return;
+    canvasStatus.textContent = messaggio;
+    canvasStatus.className = 'canvas-card__status';
+    if (tipo === 'success') {
+        canvasStatus.style.background = 'rgba(34, 197, 94, 0.12)';
+        canvasStatus.style.color = '#15803d';
+    } else if (tipo === 'error') {
+        canvasStatus.style.background = 'rgba(248, 113, 113, 0.15)';
+        canvasStatus.style.color = '#b91c1c';
+    } else {
+        canvasStatus.style.background = 'rgba(59, 130, 246, 0.12)';
+        canvasStatus.style.color = '#1d4ed8';
+    }
+}
+
+function aggiornaMetadatiCanvas(scala = parseFloat(document.getElementById("scalaPx").value) || 1) {
+    if (!dimensioniCanvas) return;
+    const larghezza = (canvas.width * scala).toFixed(1);
+    const altezza = (canvas.height * scala).toFixed(1);
+    dimensioniCanvas.textContent = `Dimensioni area analizzata: ${canvas.width} × ${canvas.height} px (≈ ${larghezza} m × ${altezza} m)`;
+}
+
+// Esegui la simulazione all'avvio per mostrare una tela coerente
 simula();
