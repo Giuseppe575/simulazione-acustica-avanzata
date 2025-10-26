@@ -4,54 +4,118 @@
     <meta charset="UTF-8" />
     <title>Simulazione Acustica Avanzata</title>
     <link rel="stylesheet" href="style.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 </head>
 <body>
-    <h1>Simulazione Acustica Avanzata</h1>
-
-    <form id="controlliForm">
-        <div class="control-group">
-            <h3>Modalità di Interazione</h3>
-            <label><input type="radio" name="modalita" value="sorgente" checked> Aggiungi Sorgente</label>
-            <label><input type="radio" name="modalita" value="recettore"> Aggiungi Recettore</label>
-            <label><input type="radio" name="modalita" value="barriera"> Disegna Barriera</label>
+    <header class="page-header">
+        <div class="page-header__content">
+            <h1>Simulazione Acustica Avanzata</h1>
+            <p class="page-header__subtitle">
+                Strumento professionale per la modellazione previsionale delle emissioni sonore in scenari complessi.
+            </p>
         </div>
+        <div class="page-header__badge">Versione tecnica</div>
+    </header>
 
-        <div class="control-group">
-            <h3>Parametri Sorgente da Aggiungere</h3>
-            <label>Nome Sorgente: <input type="text" id="nomeSorgente" value="S1" /></label>
-            <label>Potenza sonora (dB): <input type="number" id="potenza" value="100" /></label>
-            <label>Altezza sorgente (m): <input type="number" id="altezzaSorgente" value="3" /></label>
-            <label>Tipo propagazione:
-                <select id="tipoPropagazione">
-                    <option value="sferica">Sferica</option>
-                    <option value="semisferica" selected>Semisferica</option>
-                </select>
-            </label>
-        </div>
+    <main class="layout">
+        <aside class="control-panel">
+            <h2>Configurazione Progetto</h2>
+            <p class="control-panel__intro">
+                Definisci le caratteristiche del tuo scenario acustico. Ogni modifica aggiorna automaticamente la simulazione.
+            </p>
+            <form id="controlliForm" class="control-form">
+                <fieldset class="control-group">
+                    <legend>Modalità di interazione</legend>
+                    <label class="radio-option"><input type="radio" name="modalita" value="sorgente" checked> Aggiungi sorgente</label>
+                    <label class="radio-option"><input type="radio" name="modalita" value="recettore"> Aggiungi recettore</label>
+                    <label class="radio-option"><input type="radio" name="modalita" value="barriera"> Disegna barriera</label>
+                </fieldset>
 
-        <div class="control-group">
-            <h3>Parametri Generali</h3>
-            <label>Attenuazione barriera (dB): <input type="number" id="attenuazioneBarriera" value="10" /></label>
-            <label>Scala immagine (m/pixel): <input type="number" step="0.01" id="scalaPx" value="1" /></label>
-            <label>Carica planimetria: <input type="file" id="uploadImg" accept="image/*" /></label>
-        </div>
+                <fieldset class="control-group">
+                    <legend>Parametri sorgente</legend>
+                    <label>Nome sorgente<input type="text" id="nomeSorgente" value="S1" /></label>
+                    <label>Potenza sonora (dB)<input type="number" id="potenza" value="100" /></label>
+                    <label>Altezza sorgente (m)<input type="number" id="altezzaSorgente" value="3" /></label>
+                    <label>Tipo propagazione
+                        <select id="tipoPropagazione">
+                            <option value="sferica">Sferica</option>
+                            <option value="semisferica" selected>Semisferica</option>
+                        </select>
+                    </label>
+                </fieldset>
 
-        <div class="control-group buttons">
-            <button type="button" onclick="simula()">🚀 Ricalcola Simulazione</button>
-            <button type="button" onclick="reset()">Pulisci Tutto</button>
-            <button type="button" onclick="generaPDF()">📄 Genera PDF</button>
-        </div>
-    </form>
+                <fieldset class="control-group">
+                    <legend>Parametri globali</legend>
+                    <label>Attenuazione barriera (dB)<input type="number" id="attenuazioneBarriera" value="10" /></label>
+                    <label>Scala immagine (m/pixel)<input type="number" step="0.01" id="scalaPx" value="1" /></label>
+                    <label class="file-input">Carica planimetria<input type="file" id="uploadImg" accept="image/*" /></label>
+                </fieldset>
 
-    <div id="canvasWrapper">
-        <canvas id="mappaCanvas" width="800" height="600"></canvas>
-        <div id="legenda"></div>
-    </div>
+                <div class="control-actions">
+                    <button type="button" class="primary" onclick="simula()">🚀 Ricalcola simulazione</button>
+                    <button type="button" class="secondary" onclick="reset()">Pulisci tutto</button>
+                    <button type="button" class="outline" data-action="genera-pdf" onclick="generaPDF()">📄 Genera PDF</button>
+                </div>
+            </form>
+
+            <section class="panel-info">
+                <h3>Come procedere</h3>
+                <ol>
+                    <li>Carica l'eventuale planimetria del sito o lavora su fondo neutro.</li>
+                    <li>Inserisci le sorgenti sonore posizionandole sulla mappa.</li>
+                    <li>Aggiungi i recettori di controllo e, se necessario, disegna le barriere.</li>
+                    <li>Analizza l'impatto acustico e genera il report tecnico in PDF.</li>
+                </ol>
+            </section>
+        </aside>
+
+        <section class="visualization">
+            <article class="canvas-card">
+                <header class="canvas-card__header">
+                    <div>
+                        <h2>Mappa di simulazione</h2>
+                        <p id="dimensioniCanvas" class="canvas-card__meta"></p>
+                    </div>
+                    <div class="canvas-card__status" id="canvasStatus">Pronto per l'analisi</div>
+                </header>
+                <div id="canvasWrapper">
+                    <canvas id="mappaCanvas" width="800" height="600"></canvas>
+                </div>
+            </article>
+
+            <div class="insights-grid">
+                <article class="info-card">
+                    <h3>Sintesi operativa</h3>
+                    <ul id="sintesiLista" class="sintesi-lista"></ul>
+                </article>
+                <article class="info-card">
+                    <h3>Legenda acustica</h3>
+                    <div id="legenda"></div>
+                </article>
+                <article class="info-card">
+                    <h3>Note metodologiche</h3>
+                    <p>
+                        Il modello implementa una propagazione semplificata basata sulle linee guida ISO 9613 per scenari
+                        outdoor. L'attenuazione dovuta alla divergenza geometrica e alla presenza di barriere è valutata su
+                        base energetica.
+                    </p>
+                    <ul>
+                        <li>Coordinate espresse in metri, secondo la scala definita.</li>
+                        <li>Somma energetica delle sorgenti per la stima del livello combinato.</li>
+                        <li>Attenuazione barriera applicata quando il tracciato interseca l'ostacolo.</li>
+                    </ul>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <footer class="page-footer">
+        <p>Simulatore sviluppato per analisi previsionali professionali. Ultimo aggiornamento: <span id="dataAggiornamento"></span>.</p>
+    </footer>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    
-    <script src="script_avanzato.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
